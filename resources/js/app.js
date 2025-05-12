@@ -1,0 +1,9 @@
+import './bootstrap';
+import './component/category.js';
+import './component/scriptDelete';
+import './component/alertings.js';
+import './component/location.js';
+import './component/plants.js';
+import  './component/plantsNa.js';
+import  './component/plantsDmg.js';
+import './component/plantsEmp.js';
