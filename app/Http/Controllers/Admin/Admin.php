@@ -17,6 +17,9 @@ use App\Models\plants;
 use App\Http\Requests\PlantValidation;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\users;
+use App\Http\Requests\UserAddValidation;
+use App\Http\Requests\UserUpdateValidation;
 
 
 
@@ -27,10 +30,12 @@ class Admin extends Controller
      protected $category;
      protected $location;
      protected $plants;
-    public function __construct(category $category, location $location, plants $plants) {
+     protected $users;
+    public function __construct(category $category, location $location, plants $plants, users $users ) {
         $this->category = $category;
         $this->location = $location;
         $this->plants = $plants;
+        $this->users = $users;
     }
 
     public function Dashboard () {
@@ -757,5 +762,198 @@ public function exportPlantsPdf(Request $request)
 
 
 
+public function Manage_users()  {
+     $data = [
+                'title' => 'Data Users',
+            ];
+            return view('admin.management-users.file', $data);
+}
+
+
+public function getDataUsers(Request $request)  {
+    if ($request->ajax()) {
+        // Mulai query tanpa get() dulu
+        $query = $this->users->orderBy('fullname', 'asc');
+        // Cek apakah ada parameter pencarian
+        if ($request->has('search') && !empty($request->input('search')['value'])) {
+            $searchTerm = $request->input('search')['value'];
+            $query->where('fullname', 'LIKE', "%{$searchTerm}%");
+        }
+        // Gunakan DataTables langsung dari Query Builder, tanpa ->get()
+        return DataTables::of($query)
+            ->addIndexColumn()
+
+             ->addColumn('is_active', function ($row) {
+                    return ($row->is_active === 1 ? '<span class="badge bg-red text-indigo-fg">Aktif</span>' : '<span class="badge bg-secondary text-dark-fg">Nonaktif</span>');
+             })
+
+             ->addColumn('role_id', function ($row) {
+                    return ($row->role_id === 1 ? ' <span class="badge badge-outline text-purple">Admin</span>' : ' <span class="badge badge-outline text-default">User/Employe</span>');
+             })
+
+             ->addColumn('image', function($row) {
+                $imageUrl = route('avatar.image.show', ['filename' => $row->image]);
+                return '<img src="' . htmlspecialchars($imageUrl, ENT_QUOTES, 'UTF-8') . '" width="50" height="50" class="img-thumbnail">';
+            })
+
+            ->addColumn('action', function ($row) {
+                $idCrypt = Crypt::encrypt($row->id_user);
+                $updateUser =  route('Admin.user.view.update',$idCrypt);
+                $deleteUser = route('Admin.delete.user.management',$idCrypt);
+                        $btn = '<a href="'.$updateUser.'" class="btn btn-pill btn-outline-warning btn-sm"><i class="fa fa-edit"></i></a>';
+
+                        $btn .= '<form action="'. $deleteUser . '" method="POST" class="d-inline">
+                        '.csrf_field().'
+                        <input type="hidden" name="_method" value="DELETE">
+                        <button type="button" 
+                            onclick="confirmDelete(this)"
+                            class="btn btn-pill btn-outline-danger btn-sm">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </form>';
+                return $btn;
+            })
+            ->rawColumns(['action','is_active', 'role_id','image'])
+            ->make(true);
+    }
+}
+
+public function CreateUsers()  {
+      $data = [
+                'title' => 'Add Data Users',
+            ];
+            return view('admin.management-users.form.add', $data);
+}
+
+
+public function StoreUser(UserAddValidation $request) {
+     try {
+        //   cek username already exist
+        if (users::isUsernameExistsAdd($request->input('username'))) {
+            return redirect()->route('Admin.management.users')
+                ->with('error', 'Username already exists.');
+        }
+  
+        $this->users->create([
+            'fullname' => $request->input('fullname'),
+            'username' => $request->input('username'),
+            'password' => bcrypt($request->input('password')),
+            'role_id' => $request->input('role_id'),
+            'is_active' => $request->input('is_active'),
+            'image' => 'default.jpg',
+        ]);
+        
+       return redirect()->route('Admin.management.users')->with('success','success save');
+       } catch (\Throwable $th) {
+           return redirect()->route('Admin.management.users')->with('error','Failed to create data. Please try again.');
+       }
+}
+
+    public function showUser($id) {
+            $encyData = Crypt::decrypt($id);
+            $unclockQuery = $this->users->findOrFail($encyData);
+            $data = [
+                    'title' => 'Update Data Users',
+                    'row' => $unclockQuery,
+                    'idEsse' => $id
+                ];
+                return view('admin.management-users.form.update', $data);
+    }
+
+
+    public function UpdateUser(UserUpdateValidation $request)  {
+         try {
+        try {
+            $idUser = $request->input('id_user', null);
+            $idDecy = Crypt::decrypt($idUser);
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            return redirect()->route('Admin.management.users')
+                ->with('error', 'Invalid User ID!');
+        }
+
+        $user = $this->users->findOrFail($idDecy);
+
+        if (Users::isUsernameExistsEdit($request->input('username'), $idDecy)) {
+            return redirect()->route('Admin.management.users')
+                ->with('error', 'Username already exists!');
+        }
+        // Proses password baru jika ada
+           $hashedPassword = $user->password;
+           if (!empty($request->input('password'))) {
+               $hashedPassword = Hash::make($request->input('password'));
+           }
+           // ambil data gambar baru dan lama
+           $newImage = $request->file('image');
+          
+           $oldImage = $request->input('imageold');
+           // Jika ada gambar baru
+           if ($newImage) {
+               // Simpan gambar baru di folder 'images' dalam storage 'public'
+               // $imagePath = $newImage->store('assets/backend/dist/img/avatar/', 'public');
+               $imagePath =  $newImage->store('avatar', 'public');
+               $imageName = basename($imagePath);
+   
+               // Hapus gambar lama jika ada dan bukan gambar default
+               if ($oldImage && $oldImage !== 'default.jpg') {
+                  //  $oldImagePath = storage_path('app/avatar/' . $oldImage);
+                   $oldImagePath = storage_path('app/public/avatar/' . $oldImage);
+                   if (file_exists($oldImagePath)) {
+                       unlink($oldImagePath);
+                   }
+               }
+           } else {
+               // Jika tidak ada gambar baru, gunakan gambar lama
+               $imageName = $oldImage;
+           }
+                // Update data di database
+                   $user->update([
+                      'fullname' => $request->input('fullname'),
+                        'username' => $request->input('username'),
+                         'password' => $hashedPassword,
+                        'role_id' => $request->input('role_id'),
+                        'is_active' => $request->input('is_active'),
+                      'image' => $imageName,
+                   ]);
+                   // Redirect dengan pesan sukses
+                      return redirect()->route('Admin.management.users')->with('success','User Update successfully');
+                } catch (\Throwable $th) {
+                    return redirect()->route('Admin.management.users')->with('error','Failed to Update data. Please try again.');
+                }
+    }
+
+
+    public function DeleteUser($id) {
+         try {
+            $idUserDecrypted = Crypt::decrypt($id);
+            $userData = Users::find($idUserDecrypted);
+ 
+            $images = $userData->image;
+          
+            if (!$userData) {
+                return redirect()->route('Admin.management.users')
+                    ->with('error', 'Data ID Not Found!');
+            }
+
+
+            if ($images && $images !== 'default.jpg') {
+                // Menentukan path file gambar di storage/app/avatar
+                $imagePath = storage_path('app/public/avatar/' . $images);
+                // Memastikan gambar ada di folder tersebut dan menghapusnya
+                if (file_exists($imagePath)) {
+                    unlink($imagePath);
+                }
+            }
+    
+            $userData->delete();
+            
+            return redirect()->route('Admin.management.users')->with('success', 'Success delete');
+        } catch (DecryptException $e) {
+            return redirect()->route('Admin.management.users')
+                ->with('error', 'Invalid ID!');
+        } catch (\Throwable $th) {
+            return redirect()->route('Admin.management.users')
+                ->with('error', 'Failed to delete data. Please try again.');
+        }
+    }
 
 }

@@ -48,6 +48,27 @@ Route::prefix('Admin')->name('Admin.')->group(function () {
     Route::delete('location-delete-management/{id}', [Admin::class, 'DeleteLocation'])->name('delete.location.management');
 });
 
+Route::get('/avatar/{filename}', function ($filename) {
+    $path = storage_path('app/public/avatar/' . $filename);
+    if (!File::exists($path)) {
+        abort(404);
+    }
+    $file = File::get($path);
+    $type = File::mimeType($path);
+
+    return response($file, 200)->header("Content-Type", $type);
+})->name('avatar.image.show');
+
+Route::prefix('Admin')->name('Admin.')->group(function () {
+    Route::get('management-users', [Admin::class, 'Manage_users'])->name('management.users');
+    Route::get('users-management-get', [Admin::class, 'getDataUsers'])->name('users.management.get');
+    Route::get('users-management-create', [Admin::class, 'CreateUsers'])->name('create.users');
+    Route::post('user-store', [Admin::class, 'StoreUser'])->name('store.user');
+    Route::get('view-user-update/{id}', [Admin::class, 'showUser'])->name('user.view.update');
+    Route::put('store-update-user', [Admin::class, 'UpdateUser'])->name('update.user.management');
+    Route::delete('user-delete-management/{id}', [Admin::class, 'DeleteUser'])->name('delete.user.management');
+});
+
 
 //route untuk handle Administrator (User Management)
 Route::get('/plants/{filename}', function ($filename) {

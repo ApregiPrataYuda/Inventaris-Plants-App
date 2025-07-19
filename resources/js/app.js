@@ -7,3 +7,4 @@ import './component/plants.js';
 import  './component/plantsNa.js';
 import  './component/plantsDmg.js';
 import './component/plantsEmp.js';
+import './component/Users.js'

@@ -41,12 +41,16 @@
 
     @php
     $user = dataUser();
+
+                  $defaultImg = 'default.jpg';
+                  $imageUrl = $user->image ? route('avatar.image.show', ['filename' => $user->image]) : asset('storage/avatar/' . $defaultImg);
+                  $version = $user->image ? time() : time(); // Anda bisa menyesuaikan versioning untuk route
     @endphp
 
 
     <div class="nav-item dropdown">
         <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="Open user menu">
-            <img src="{{ asset('assets/backend/static/avatars/default.png') }}" class="avatar avatar-sm rounded-circle"  style="background-image" alt="">
+            <img src="{{ $imageUrl }}?v={{ $version }}" class="avatar avatar-sm rounded-circle"  style="background-image" alt="">
             <div class="d-none d-xl-block ps-2">
                 <div>{{ $user->fullname }}</div>
                 <div class="mt-1 small text-secondary">{{ ($user->role_id) === 1 ? 'Admin' : 'Employe' }}</div>
@@ -138,6 +142,17 @@
             </span>
             <span class="nav-link-title text-capitalize">
                  Report Plants Log
+            </span>
+        </a>
+    </li>
+
+    <li class="nav-item">
+        <a class="nav-link" href="{{ route('Admin.management.users') }}">
+            <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <i class="nav-icon fas fa-users"></i>
+            </span>
+            <span class="nav-link-title text-capitalize">
+                Management User
             </span>
         </a>
     </li>
@@ -237,7 +252,7 @@
     </div>
     <div class="nav-item dropdown">
         <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="Open user menu">
-            <img src="{{ asset('assets/backend/static/avatars/default.png') }}" class="avatar avatar-sm rounded-circle"  style="background-image" alt="">
+            <img src="{{ $imageUrl }}?v={{ $version }}" class="avatar avatar-sm rounded-circle"  style="background-image" alt="">
        {{-- <span class="avatar avatar-sm" style="background-image: ></span> --}}
             <div class="d-none d-xl-block ps-2">
                 <div>{{ $user->fullname }}</div>
