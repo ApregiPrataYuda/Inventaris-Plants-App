@@ -42,12 +42,14 @@ class Admin extends Controller
         $totalCat = $this->category->count();
         $totalLoc = $this->location->count();
         $totalPlant = $this->plants->count();
+        $totalUser = $this->users->count();
        
         $data = [
              'title' => 'Dashboard',
               'totalCat' => $totalCat,
               'totalLoc' => $totalLoc,
-              'totalPlant' => $totalPlant
+              'totalPlant' => $totalPlant,
+              'totalUser' => $totalUser
         ];
         return view('admin.dashboard.file', $data);
     }

@@ -87,6 +87,20 @@
                     </div>
               </div>
             </div>
+
+            <div class="col-sm-6 col-lg-4">
+                <div class="card">
+                    <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="subheader">Data User</div>
+                        <div class="ms-auto lh-1">
+                        
+                        </div>
+                    </div>
+                    <div class="h1 mb-3">{{ $totalUser }}</div>
+                    </div>
+              </div>
+            </div>
             
             
             

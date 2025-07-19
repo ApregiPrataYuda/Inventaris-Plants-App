@@ -31,7 +31,7 @@
 				<ul class="list-inline list-inline-dots mb-0">
 					<li class="list-inline-item">
 						Copyright &copy; 2025
-						<a href="https://yourwebsite.com" class="link-secondary">Inventaris Plants App</a>.
+						<a href="https://usaktigren.site/" class="link-secondary">Inventaris Plants App</a>.
 						All rights reserved.
 					</li>
 					<li class="list-inline-item">
